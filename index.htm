@@ -1,0 +1,177 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+	<head>
+		<title>Visor de archivos de registro</title>
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
+		<link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/themes/smoothness/jquery-ui.css" />
+		<link rel="stylesheet" href="../cmirror/lib/codemirror.css" />
+		<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
+		<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/jquery-ui.min.js"></script>
+		<script src="../cmirror/lib/codemirror.js"></script>
+		<script src="../cmirror/keymap/vim.js"></script>
+		<script src="../cmirror/keymap/sublime.js"></script>
+	</head>
+
+	<body>
+		<script>
+			$(document).ready(function() {
+				var cmirrorReadOnly = CodeMirror.fromTextArea(document.getElementById('registro'), {
+					mode : "javascript",
+					theme : "default",
+					lineNumbers : true,
+					readOnly : true
+				});
+				
+				$('div .CodeMirror').css("height","auto");
+				
+				cmirrorReadOnly.setOption("vimMode", true);
+				cmirrorReadOnly.setOption("lineWrapping", true);
+				
+				$('#spinner').spinner({ max: 10000, min: 250 });
+				$('#spinner').val('1500');
+				$('#spinner2').spinner({ max: 50, min: 5 });
+				$('#spinner2').val('10');
+				
+				$('input:radio').on("click",function(){
+						var valor = $('input:radio:checked').val();
+						if (valor == "vim") {
+							cmirrorReadOnly.setOption("vimMode", true);
+							cmirrorReadOnly.setOption("sublimeMode", false);
+						}		
+						if (valor == "sublime"){
+							cmirrorReadOnly.setOption("vimMode", false);
+							cmirrorReadOnly.setOption("sublimeMode", true);
+						}
+						if (valor == "none"){
+							cmirrorReadOnly.setOption("vimMode", false);
+							cmirrorReadOnly.setOption("sublimeMode", false);
+						}	
+				});
+				
+				var contador = setInterval(getData,$('#spinner').val());
+				
+				function getData(){
+					$.getJSON(
+						'getlog.php',
+						{ 'sist' : $('#sistema').val(), 'type' : getTipo(), "lines" : $('#spinner2').val() },
+						function (respuesta){
+								 if (respuesta.success){
+								 	if (respuesta.data != null){
+								 		cmirrorReadOnly.setValue(respuesta.data);
+								 	}
+								 }							
+						}
+					);
+				}
+				
+				$('#spinner').on("change",function(){
+							  clearInterval(contador);
+							  contador = setInterval(getData,$('#spinner').val());
+				});
+				
+				$('#linewrap').on("click",function(){
+					if ($(this).is(":checked")){
+						cmirrorReadOnly.setOption("lineWrapping", true);
+					} else {
+						cmirrorReadOnly.setOption("lineWrapping", false);
+					}
+				});
+			});
+			function getTipo(){
+					     var tipo = "0";
+					     $('input:checkbox[name|=archivo]:checked').each(function(i){
+					     	   tipo |= $(this).val();
+					     });
+					     return parseInt(tipo,2);
+			}
+		</script>
+		<div class="container" style="margin-top: 30px; width: 95%; margin-left:3%; margin-right:3%;">
+			<div class="panel panel-default">
+				<div class="panel-heading" style="text-align: center;">
+
+					<span class="h1">Visor de archivos de registro</span>
+
+				</div>
+				<div class="panel-body">
+					<div class="col-md-4">
+						<form class="form-horizontal" role="form">
+							<div class="form-group">
+								<label for="sistema" class="col-md-2 control-label">Sistema:</label>
+								<div class="col-md-6">
+									<select id="sistema" class="form-control">
+										<option value="0">Joomla</option>
+										<option value="1">Moodle</option>
+										<option value="2">Vtiger</option>
+										<option value="3">OrbitAdServer</option>
+										<option value="4">ERP</option>
+										<option value="5">CustomerPortal</option>
+									</select>
+								</div>
+							</div>
+							<label>Tipo de registro:</label>
+							<div class="checkbox">
+								<label>
+									<input type="checkbox" id="archivo1" value="100" name="archivo">
+									Accesos </label>
+							</div>
+							<div class="checkbox">
+								<label>
+									<input type="checkbox" id="archivo2" value="010" checked name="archivo">
+									Errores </label>
+							</div>
+							<div class="checkbox">
+								<label>
+									<input type="checkbox" id="archivo3" value="1" name="archivo">
+									PHP </label>
+							</div>
+							<br>
+							<div>
+								<label for="spinner">Frecuecia (en milisegundos):</label>
+								<input id="spinner" name="value">
+							</div>
+							<br>
+							<div>
+								<label for="spinner2">L&iacute;neas (por sistema):</label>
+								<input id="spinner2" name="value">
+							</div>
+							<br>
+							<div class="panel panel-default">
+								<div class="panel-heading">
+									<span class="panel-title">Integraci&oacute;n con editor</span>
+								</div>
+								<div class="panel-body">
+									<div class="radio">
+										<label for="radio1">
+											<input type="radio" name="option" id="radio1" value="vim" checked>Vim
+										</label>
+									</div>
+									<div class="radio">
+										<label for="radio2">
+											<input type="radio" name="option" id="radio2" value="sublime">Sublime
+										</label>
+									</div>
+									<div class="radio">
+										<label for="radio3">
+											<input type="radio" name="option" id="radio3" value="none">Ninguno
+										</label> 
+									</div>
+								</div>
+							</div>
+							
+							<label>Opciones del editor:</label>
+							<div class="checkbox">
+								<label>
+									<input type="checkbox" id="linewrap" value="1" checked>
+									Activar ajuste de l&iacute;neas </label>
+							</div>
+						</form>
+					</div>
+					<div class="row">
+						<textarea id="registro" class="form-control" readonly></textarea>
+					</div>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>
